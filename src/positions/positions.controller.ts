@@ -46,12 +46,24 @@ export class PositionsController {
   }
 
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() positionData: { position_code: string; position_name: string }
-  ) {
+@HttpCode(HttpStatus.CREATED)
+async create(
+  @Body() positionData: { position_code: string; position_name: string }
+) {
+  try {
     console.log('POST /positions triggered', positionData);
+
+    // Basic validation safeguard
+    if (!positionData.position_code || !positionData.position_name) {
+      throw new BadRequestException('position_code and position_name are required');
+    }
+
     const created = await this.positionsService.create(positionData);
+
+    if (!created) {
+      throw new InternalServerErrorException('Failed to create position');
+    }
+
     return {
       id: created.id,
       position_code: created.position_code,
@@ -59,7 +71,11 @@ export class PositionsController {
       created_at: created.created_at,
       updated_at: created.updated_at,
     };
+  } catch (error) {
+    console.error('Error in POST /positions:', error);
+    throw error; // NestJS will format this into a proper HTTP error response
   }
+}
 
   @Put(':id')
   async update(
